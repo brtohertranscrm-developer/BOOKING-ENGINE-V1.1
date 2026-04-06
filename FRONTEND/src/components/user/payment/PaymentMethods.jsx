@@ -35,28 +35,6 @@ const PaymentMethods = ({
         </label>
       </div>
 
-      {/* Area Instruksi / Upload */}
-      <div className="bg-gray-50/80 p-6 rounded-2xl mb-8 border border-gray-200 shadow-inner">
-        {paymentMethod === 'bank_bca' ? (
-          <div>
-            <div className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Nomor Virtual Account BCA:</div>
-            <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-              <span className="font-mono text-xl sm:text-2xl font-black tracking-widest text-brand-dark">3902 8374 9928</span>
-              <button type="button" onClick={() => alert('Nomor disalin!')} className="text-brand-primary hover:text-brand-secondary bg-rose-50 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-colors border border-rose-100">
-                <Copy size={14} /> Salin
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center">
-            <div className="w-40 h-40 bg-white mx-auto border border-gray-200 rounded-xl flex items-center justify-center mb-4 shadow-sm">
-              <span className="text-gray-300 font-black text-[10px] uppercase tracking-widest border-2 border-dashed border-gray-200 px-4 py-12 rounded-lg">QR CODE IMAGE</span>
-            </div>
-            <p className="text-xs font-bold text-gray-500">Buka aplikasi M-Banking/E-Wallet Anda dan scan kode QR di atas.</p>
-          </div>
-        )}
-      </div>
-
       <button 
         type="submit"
         disabled={isProcessing}

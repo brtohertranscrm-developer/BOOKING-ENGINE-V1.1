@@ -3,8 +3,14 @@ const db = require('../db');
 const router = express.Router();
 
 router.get('/motors', (req, res) => {
-  db.all('SELECT * FROM motors WHERE stock > 0 ORDER BY base_price ASC', (err, rows) => {
-    res.json({ success: true, data: rows });
+  // Coba hapus sementara "WHERE stock > 0" untuk memastikan data benar-benar bisa ditarik
+  db.all('SELECT * FROM motors ORDER BY base_price ASC', (err, rows) => {
+    if (err) {
+      console.error("Error fetching motors:", err.message);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    // Pastikan mengembalikan array kosong jika tidak ada data, bukan undefined
+    res.json({ success: true, data: rows || [] }); 
   });
 });
 

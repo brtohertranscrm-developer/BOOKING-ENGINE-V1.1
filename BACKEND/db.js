@@ -137,6 +137,7 @@ db.serialize(() => {
 
   // Update kolom untuk tabel Bookings
   addColumnIfNotExists('bookings', 'location', 'TEXT');
+  addColumnIfNotExists('bookings', 'payment_status', 'TEXT DEFAULT "paid"'); // <-- Tambahkan baris ini
 
   // Buat Unique Index untuk Referral Code
   db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code)`, (err) => {

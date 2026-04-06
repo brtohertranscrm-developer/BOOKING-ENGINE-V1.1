@@ -5,24 +5,27 @@ export const useHomeData = () => {
   const [featuredMotors, setFeaturedMotors] = useState([]);
   const [isLoadingMotors, setIsLoadingMotors] = useState(true);
 
+  // Ambil URL dari environment, jika tidak ada fallback ke localhost
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
   // Ambil Promo
   useEffect(() => {
-    fetch('http://localhost:5001/api/promotions')
+    fetch(`${API_URL}/api/promotions`)
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.data.length > 0) {
+        if (data.success && data.data && data.data.length > 0) {
           setPromotions(data.data);
         }
       })
       .catch(err => console.error('Gagal memuat promo:', err));
-  }, []);
+  }, [API_URL]);
 
   // Ambil Motor Unggulan
   useEffect(() => {
-    fetch('http://localhost:5001/api/motors')
+    fetch(`${API_URL}/api/motors`)
       .then(res => res.json())
       .then(data => {
-        if (data.success) {
+        if (data.success && data.data) {
           setFeaturedMotors(data.data.slice(0, 3));
         }
         setIsLoadingMotors(false);
@@ -31,7 +34,7 @@ export const useHomeData = () => {
         console.error('Gagal memuat motor:', err);
         setIsLoadingMotors(false);
       });
-  }, []);
+  }, [API_URL]);
 
   return { promotions, featuredMotors, isLoadingMotors };
 };

@@ -72,16 +72,16 @@ export const useSearchPage = () => {
     navigate('.', { state: formData, replace: true });
   };
 
-  const handleRent = (motor) => {
+  const handleRent = (motor, activePrice) => {
     navigate('/checkout-motor', {
       state: {
         motorId: motor.id,
         motorName: motor.name,
-        motorImage: motor.image_url,
-        basePrice: motor.current_price || motor.base_price, 
-        startDate: activeSearch.startDate,
-        endDate: activeSearch.endDate,
-        pickupLocation: activeSearch.pickupLocation
+        pickupLocation: searchParams.pickupLocation,
+        startDate: searchParams.startDate,
+        endDate: searchParams.endDate,
+        totalDays: totalDays, 
+        basePrice: activePrice // PASTIKAN activePrice DIKIRIM SEBAGAI basePrice
       }
     });
   };

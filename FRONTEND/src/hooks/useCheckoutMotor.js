@@ -32,11 +32,14 @@ export const useCheckoutMotor = () => {
 
   if (!bookingData || !user) return { isReady: false }; 
 
-  // Kalkulasi Harga
-  const subTotal = bookingData.basePrice * bookingData.totalDays;
-  const adminFee = 2500;
-  const insuranceFee = 15000 * bookingData.totalDays;
-  const grandTotal = subTotal + adminFee + insuranceFee;
+  // Kalkulasi Harga (Tambahkan fallback || 0)
+    const totalDays = bookingData?.totalDays || 1;
+    const basePrice = bookingData?.basePrice || 0;
+
+    const subTotal = basePrice * totalDays;
+    const adminFee = 2500;
+    const insuranceFee = 15000 * totalDays;
+    const grandTotal = subTotal + adminFee + insuranceFee;
 
   const handleCheckout = async () => {
     setIsLoading(true);
