@@ -57,7 +57,7 @@ export default function Dashboard() {
             )}
 
             {/* 3. Pesanan Aktif (Jika Ada) */}
-            <ActiveBookingCard order={activeOrder} navigate={navigate} />
+            <ActiveBookingCard activeOrder={activeOrder} navigate={navigate} />
 
             {/* 4. Kotak Status Miles / Point */}
             <UserStats currentMiles={currentMiles} navigate={navigate} />

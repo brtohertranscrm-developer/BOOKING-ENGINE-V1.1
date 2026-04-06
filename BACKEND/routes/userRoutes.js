@@ -18,7 +18,10 @@ router.get('/dashboard/me', (req, res) => {
   db.get(query, [req.user.id], (err, user) => {
     if (err) return res.status(500).json({ success: false, error: err.message });
     
-    db.get(`SELECT order_id as id, item_name as item, status FROM bookings WHERE user_id = ? AND status IN ('pending', 'active') LIMIT 1`, 
+    db.get(
+      `SELECT order_id as id, item_name as item, location, start_date as startDate, end_date as endDate, status 
+       FROM bookings 
+       WHERE user_id = ? AND status IN ('pending', 'active') LIMIT 1`, 
     [req.user.id], (err, order) => {
       res.json({ success: true, data: { user, activeOrder: order || null } });
     });
