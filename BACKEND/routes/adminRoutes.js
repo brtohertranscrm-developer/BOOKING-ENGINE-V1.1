@@ -48,4 +48,52 @@ router.put('/kyc/:id', (req, res) => {
 router.get('/motors', (req, res) => { db.all('SELECT * FROM motors ORDER BY id DESC', (err, rows) => res.json({ success: true, data: rows })); });
 // ... (tambahkan route admin lainnya di sini)
 
+// ==========================================
+// TRANSAKSI & BOOKING MANAGEMENT
+// ==========================================
+
+// 1. Ambil Semua Data Transaksi (Untuk Dashboard & Tab Booking)
+router.get('/bookings', (req, res) => {
+  // Gunakan LEFT JOIN agar nama dan nomor HP dari tabel users ikut terbawa
+  const query = `
+    SELECT b.*, u.name as user_name, u.phone as user_phone 
+    FROM bookings b 
+    LEFT JOIN users u ON b.user_id = u.id 
+    ORDER BY b.start_date DESC
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error("Error fetching bookings:", err.message);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.json({ success: true, data: rows || [] });
+  });
+});
+
+// 2. Update Status Transaksi & Pembayaran (Untuk Tombol Update di Admin)
+router.put('/bookings/:orderId/status', (req, res) => {
+  const { status, payment_status } = req.body;
+  
+  let query = `UPDATE bookings SET status = ?`;
+  let params = [status];
+
+  // Jika admin juga mengubah status pembayaran (paid/unpaid)
+  if (payment_status) {
+     query += `, payment_status = ?`;
+     params.push(payment_status);
+  }
+  
+  query += ` WHERE order_id = ?`;
+  params.push(req.params.orderId);
+
+  db.run(query, params, function(err) {
+    if (err) {
+      console.error("Error updating booking:", err.message);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.json({ success: true, message: 'Status transaksi berhasil diupdate' });
+  });
+});
+
 module.exports = router;

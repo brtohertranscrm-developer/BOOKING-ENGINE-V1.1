@@ -18,10 +18,7 @@ router.get('/dashboard/me', (req, res) => {
   db.get(query, [req.user.id], (err, user) => {
     if (err) return res.status(500).json({ success: false, error: err.message });
     
-    db.get(
-      `SELECT order_id as id, item_name as item, location, start_date as startDate, end_date as endDate, status 
-       FROM bookings 
-       WHERE user_id = ? AND status IN ('pending', 'active') LIMIT 1`, 
+    db.get(`SELECT order_id as id, item_name as item, status, location, start_date as startDate, end_date as endDate, total_price FROM bookings WHERE user_id = ? AND status IN ('pending', 'active') LIMIT 1`, 
     [req.user.id], (err, order) => {
       res.json({ success: true, data: { user, activeOrder: order || null } });
     });
@@ -95,6 +92,39 @@ router.post('/users/kyc/verify', (req, res) => {
     } else {
       res.status(400).json({ success: false, error: 'Kode verifikasi tidak valid / salah.' });
     }
+  });
+});
+
+// ==========================================
+// 6. EXTEND BOOKING (PERPANJANG SEWA)
+// ==========================================
+router.put('/bookings/:orderId/extend', (req, res) => {
+  const { additional_days } = req.body;
+  const orderId = req.params.orderId;
+
+  db.get(`SELECT start_date, end_date, total_price FROM bookings WHERE order_id = ? AND user_id = ?`, [orderId, req.user.id], (err, booking) => {
+    if (err || !booking) return res.status(500).json({ success: false, error: 'Pesanan tidak ditemukan' });
+
+    // Hitung sisa hari dan harga rata-rata per hari
+    const start = new Date(booking.start_date);
+    const currentEnd = new Date(booking.end_date);
+    const currentDays = Math.max(1, Math.ceil((currentEnd - start) / (1000 * 60 * 60 * 24)));
+    const pricePerDay = Math.round(booking.total_price / currentDays);
+    const extraCost = parseInt(additional_days) * pricePerDay;
+
+    // Set tanggal kembali yang baru
+    currentEnd.setDate(currentEnd.getDate() + parseInt(additional_days));
+    const newEndDate = currentEnd.toISOString().split('T')[0];
+
+    // Update database (tambah harga dan set ke unpaid)
+    db.run(
+      `UPDATE bookings SET end_date = ?, total_price = total_price + ?, payment_status = 'unpaid' WHERE order_id = ?`,
+      [newEndDate, extraCost, orderId],
+      function(err) {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        res.json({ success: true, new_end_date: newEndDate, extra_cost: extraCost });
+      }
+    );
   });
 });
 

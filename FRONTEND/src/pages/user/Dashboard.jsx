@@ -12,7 +12,7 @@ import { Trophy, Gift, Navigation, MapPin, ChevronRight, Headset, MessageCircle,
 export default function Dashboard() {
   const {
     isLoading, kycStatus, bannerUrl, setBannerUrl, topTravellers,
-    user, activeOrder, saveProfile, updateBanner, navigate, verifyKycCode // <-- Fungsi ditarik di sini
+    user, activeOrder, saveProfile, updateBanner, navigate, verifyKycCode, handleExtend // <-- Tarik di sini
   } = useUserDashboard();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -57,7 +57,7 @@ export default function Dashboard() {
             )}
 
             {/* 3. Pesanan Aktif (Jika Ada) */}
-            <ActiveBookingCard activeOrder={activeOrder} navigate={navigate} />
+            <ActiveBookingCard order={activeOrder} navigate={navigate} handleExtend={handleExtend} />
 
             {/* 4. Kotak Status Miles / Point */}
             <UserStats currentMiles={currentMiles} navigate={navigate} />

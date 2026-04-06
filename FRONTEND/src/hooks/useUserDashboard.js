@@ -117,6 +117,30 @@ export const useUserDashboard = () => {
     } catch (error) { console.error(error); }
   };
 
+  // FUNGSI PERPANJANG SEWA
+  const handleExtend = async (orderId) => {
+    const days = prompt("Berapa hari Anda ingin memperpanjang masa sewa?");
+    if (!days || isNaN(days) || parseInt(days) <= 0) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/bookings/${orderId}/extend`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ additional_days: days })
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`Berhasil! Tanggal kembali menjadi ${result.new_end_date}.\nMohon siapkan pembayaran tambahan Rp ${result.extra_cost.toLocaleString('id-ID')} via transfer/admin lapangan.`);
+        fetchDashboardData(); 
+      } else {
+        alert('Gagal memperpanjang pesanan: ' + result.error);
+      }
+    } catch (error) {
+      alert('Terjadi kesalahan jaringan.');
+    }
+  };
+
   // UPDATE PENTING DI SINI
   return {
     dashboardData, 
@@ -131,6 +155,7 @@ export const useUserDashboard = () => {
     verifyKycCode, 
     saveProfile, 
     updateBanner, 
-    navigate
+    navigate,
+    handleExtend
   };
 };
