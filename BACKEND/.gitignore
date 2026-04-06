@@ -1,0 +1,11 @@
+# Mengabaikan folder dependencies Node.js (ukurannya sangat besar)
+node_modules/
+
+# Mengabaikan semua file database SQLite
+*.db
+
+# Mengabaikan folder uploads 
+uploads/
+
+# Mengabaikan file environment variables (jaga-jaga jika nanti kamu buat file ini)
+.env
