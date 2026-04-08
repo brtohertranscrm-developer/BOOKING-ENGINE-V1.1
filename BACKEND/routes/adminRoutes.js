@@ -133,6 +133,8 @@ router.delete('/units/:unitId', (req, res) => {
 // ==========================================
 // TRANSAKSI & BOOKING MANAGEMENT
 // ==========================================
+
+// 1. GET ALL BOOKINGS (Untuk tabel di Dashboard)
 router.get('/bookings', (req, res) => {
   const query = `
     SELECT b.*, u.name as user_name, u.phone as user_phone 
@@ -146,6 +148,29 @@ router.get('/bookings', (req, res) => {
   });
 });
 
+// 2. GET 1 BOOKING DETAIL (Untuk Halaman Invoice)
+router.get('/bookings/:orderId', (req, res) => {
+  const query = `
+    SELECT b.*, u.name as user_name, u.email as user_email, u.phone as user_phone 
+    FROM bookings b 
+    LEFT JOIN users u ON b.user_id = u.id 
+    WHERE b.order_id = ?
+  `;
+  
+  db.get(query, [req.params.orderId], (err, row) => {
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    if (!row) {
+      // Penting: Kembalikan JSON 404 agar React tidak error
+      return res.status(404).json({ success: false, message: "Transaksi tidak ditemukan" });
+    }
+    
+    res.json({ success: true, data: row });
+  });
+});
+
+// 3. UPDATE BOOKING STATUS
 router.put('/bookings/:orderId/status', (req, res) => {
   const { status, payment_status, unit_id, plate_number } = req.body;
   
@@ -168,7 +193,7 @@ router.put('/bookings/:orderId/status', (req, res) => {
     if (status && (status.toLowerCase() === 'completed' || status.toLowerCase() === 'selesai')) {
       db.get(`SELECT user_id, total_price FROM bookings WHERE order_id = ?`, [req.params.orderId], (err, booking) => {
         if (!err && booking) {
-          // Asumsi: Setiap Rp 10.000 = 1 Mile. Ubah angka 10000 sesuai kebutuhan Anda.
+          // Asumsi: Setiap Rp 10.000 = 1 Mile
           const earnedMiles = Math.floor(booking.total_price / 10000); 
           
           db.run(
@@ -367,7 +392,5 @@ router.delete('/promos/:id', (req, res) => {
     }
   );
 });
-
-module.exports = router;
 
 module.exports = router;

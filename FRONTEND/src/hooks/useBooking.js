@@ -44,27 +44,33 @@ export const useBooking = () => {
     }
   };
 
-  // ========================================================
+// ========================================================
   // 3. FUNGSI BARU: Mengambil 1 data booking untuk Invoice
   // ========================================================
-  const fetchBookingByOrderId = async (orderId) => {
+  const fetchBookingByOrderId = useCallback(async (orderId) => {
     try {
       const response = await fetch(`${API_URL}/api/admin/bookings/${orderId}`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
+
+      // PERBAIKAN: Cek apakah responsnya sukses (bukan HTML 404)
+      if (!response.ok) {
+        throw new Error(`Endpoint tidak ditemukan (Status: ${response.status})`);
+      }
+
       const result = await response.json();
       
       if (result.success) {
-        return result.data; // Mengembalikan object transaksi
+        return result.data; 
       } else {
         throw new Error(result.message || "Data transaksi tidak ditemukan");
       }
     } catch (error) {
       console.error("Gagal mengambil detail booking:", error);
-      throw error; // Melempar error ke komponen AdminInvoice untuk ditampilkan di layar
+      throw error; 
     }
-  };
+  }, [API_URL]); // <-- PERBAIKAN: Tambahkan useCallback agar tidak infinite loop
 
   useEffect(() => {
     fetchBookings();

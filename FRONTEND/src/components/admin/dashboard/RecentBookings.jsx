@@ -61,7 +61,7 @@ const RecentBookings = ({ bookings }) => {
         ) : (
           bookings.map((trx, index) => {
             // PERBAIKAN: Menggunakan order_id yang pasti unik sebagai identifier accordion
-            const uniqueId = trx.order_id || `fallback-id-${index}`;
+            const uniqueId = trx.id || trx.order_id || `trx-${index}`;
             const isExpanded = expandedId === uniqueId;
 
             return (
