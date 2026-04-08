@@ -4,19 +4,13 @@ export const usePromo = () => {
   const [promos, setPromos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // 1. Gunakan Environment Variable agar aman saat di-hosting
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-  // 2. Buat fungsi pembantu agar token selalu fresh setiap kali ditarik
   const getAuthHeaders = () => {
-    // Cari token dengan nama 'token' atau 'admin_token'
     const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    
-    // Jika tidak ada token sama sekali, lempar peringatan (bukan error API)
     if (!token) {
       console.warn("Peringatan: Token Admin tidak ditemukan. Anda mungkin perlu login ulang.");
     }
-
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}` 
@@ -27,7 +21,7 @@ export const usePromo = () => {
     setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/admin/promos`, {
-        headers: getAuthHeaders() // Gunakan fungsi pembantu di sini
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (data.success) setPromos(data.data);
@@ -42,7 +36,7 @@ export const usePromo = () => {
     try {
       const res = await fetch(`${API_URL}/api/admin/promos`, {
         method: 'POST',
-        headers: getAuthHeaders(), // Gunakan fungsi pembantu di sini
+        headers: getAuthHeaders(),
         body: JSON.stringify(newPromo)
       });
       const data = await res.json();
@@ -60,13 +54,56 @@ export const usePromo = () => {
     }
   };
 
+  const updatePromo = async (id, updatedPromo) => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/promos/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updatedPromo)
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Promo berhasil diperbarui!');
+        fetchPromos();
+        return true; 
+      } else {
+        alert('Gagal memperbarui promo: ' + (data.error || data.message));
+        return false;
+      }
+    } catch (error) {
+      alert('Koneksi ke server gagal saat memperbarui promo.');
+      return false;
+    }
+  };
+
+  const deletePromo = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/promos/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Promo berhasil dihapus!');
+        fetchPromos();
+        return true; 
+      } else {
+        alert('Gagal menghapus promo: ' + (data.error || data.message));
+        return false;
+      }
+    } catch (error) {
+      alert('Koneksi ke server gagal saat menghapus promo.');
+      return false;
+    }
+  };
+
   const togglePromoStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 1 ? 0 : 1;
     if (!window.confirm(`Yakin ingin ${newStatus === 1 ? 'mengaktifkan' : 'mematikan'} promo ini?`)) return;
     try {
       const res = await fetch(`${API_URL}/api/admin/promos/${id}/toggle`, {
         method: 'PUT',
-        headers: getAuthHeaders(), // Gunakan fungsi pembantu di sini
+        headers: getAuthHeaders(),
         body: JSON.stringify({ is_active: newStatus })
       });
       const data = await res.json();
@@ -84,5 +121,13 @@ export const usePromo = () => {
     fetchPromos();
   }, [fetchPromos]);
 
-  return { promos, isLoading, addPromo, togglePromoStatus };
+  return { 
+    promos, 
+    isLoading, 
+    addPromo, 
+    updatePromo, 
+    deletePromo, 
+    togglePromoStatus,
+    fetchPromos
+  };
 };

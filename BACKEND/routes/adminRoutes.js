@@ -336,4 +336,38 @@ router.put('/promos/:id/toggle', (req, res) => {
   );
 });
 
+// ==========================================
+// ENDPOINT UNTUK UPDATE PROMO (EDIT)
+// ==========================================
+router.put('/promos/:id', (req, res) => {
+  const { code, discount_percent, max_discount, usage_limit } = req.body;
+  
+  // Menggunakan tabel 'promotions' sesuai database Anda
+  db.run(
+    `UPDATE promotions SET code = ?, discount_percent = ?, max_discount = ?, usage_limit = ? WHERE id = ?`,
+    [code, discount_percent, max_discount, usage_limit, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, message: 'Promo berhasil diperbarui' });
+    }
+  );
+});
+
+// ==========================================
+// ENDPOINT UNTUK HAPUS PROMO (DELETE)
+// ==========================================
+router.delete('/promos/:id', (req, res) => {
+  // Menggunakan tabel 'promotions' sesuai database Anda
+  db.run(
+    `DELETE FROM promotions WHERE id = ?`, 
+    [req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, message: 'Promo berhasil dihapus' });
+    }
+  );
+});
+
+module.exports = router;
+
 module.exports = router;
