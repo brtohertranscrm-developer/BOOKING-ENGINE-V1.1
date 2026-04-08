@@ -79,15 +79,34 @@ export default function CheckoutMotor() {
   const discountAmount = calculateDiscount();
   const finalPrice = grandTotal - discountAmount;
 
-  // === 5. LOGIKA PROTEKSI KYC ===
+  // === 5. LOGIKA PROTEKSI KYC & INCREMENT PROMO ===
   const isKycVerified = user?.kyc_status === 'verified';
 
-  const handleSecureCheckout = () => {
+  // Ubah fungsi ini menjadi async untuk menangani API increment
+  const handleSecureCheckout = async () => {
     if (!isKycVerified) {
       alert("Harap verifikasi identitas (KYC) Anda terlebih dahulu untuk dapat melanjutkan.");
       return;
     }
-    handleCheckout();
+    
+    // 1. Eksekusi proses checkout bawaan
+    await handleCheckout();
+
+    // 2. JIKA ADA PROMO TERPASANG, KIRIM SINYAL KE BACKEND UNTUK DITAMBAH 1 PENGGUNAANNYA
+    if (appliedPromo) {
+      try {
+        await fetch(`${API_URL}/api/promotions/increment`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}` // Sisipkan token auth
+          },
+          body: JSON.stringify({ code: appliedPromo.code })
+        });
+      } catch (error) {
+        console.error("Gagal melacak penggunaan promo:", error);
+      }
+    }
   };
 
   if (!isReady) return null;

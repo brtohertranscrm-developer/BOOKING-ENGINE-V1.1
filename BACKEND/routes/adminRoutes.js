@@ -289,4 +289,51 @@ router.post('/pricing/surge', (req, res) => {
   );
 });
 
+// ==========================================
+// KODE PROMO MANAGEMENT
+// ==========================================
+
+// 1. GET ALL PROMOS
+router.get('/promos', (req, res) => {
+  // MENGGUNAKAN TABEL "promotions"
+  db.all(`SELECT * FROM promotions ORDER BY id DESC`, [], (err, rows) => {
+    if (err) {
+      if (err.message.includes("no such table")) {
+        return res.json({ success: true, data: [] });
+      }
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.json({ success: true, data: rows || [] });
+  });
+});
+
+// 2. CREATE NEW PROMO (DENGAN LIMIT PENGGUNAAN)
+router.post('/promos', (req, res) => {
+  const { code, discount_percent, max_discount, usage_limit } = req.body;
+  
+  // Default title dan image agar tidak error NOT NULL
+  db.run(
+    `INSERT INTO promotions (title, code, image, discount_percent, max_discount, usage_limit, current_usage, is_active) 
+     VALUES (?, ?, ?, ?, ?, ?, 0, 1)`,
+    ['Promo Spesial', code, 'default-promo.jpg', discount_percent, max_discount, usage_limit || 0],
+    function(err) {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, message: 'Promo berhasil ditambahkan', id: this.lastID });
+    }
+  );
+});
+
+// 3. TOGGLE PROMO STATUS
+router.put('/promos/:id/toggle', (req, res) => {
+  const { is_active } = req.body;
+  db.run(
+    `UPDATE promotions SET is_active = ? WHERE id = ?`,
+    [is_active, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, message: 'Status promo berhasil diupdate' });
+    }
+  );
+});
+
 module.exports = router;

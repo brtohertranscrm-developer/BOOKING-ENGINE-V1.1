@@ -6,10 +6,10 @@ const PromoTab = () => {
   const { promos, isLoading, addPromo, togglePromoStatus } = usePromo();
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Modal State
+  // Modal State (Tambahkan usage_limit)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newPromo, setNewPromo] = useState({ code: '', discount_percent: '', max_discount: '' });
+  const [newPromo, setNewPromo] = useState({ code: '', discount_percent: '', max_discount: '', usage_limit: 0 });
 
   const filteredPromos = promos.filter(p => p.code.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -19,7 +19,7 @@ const PromoTab = () => {
     const success = await addPromo(newPromo);
     if (success) {
       setIsModalOpen(false);
-      setNewPromo({ code: '', discount_percent: '', max_discount: '' });
+      setNewPromo({ code: '', discount_percent: '', max_discount: '', usage_limit: 0 });
     }
     setIsSubmitting(false);
   };
@@ -44,18 +44,29 @@ const PromoTab = () => {
             <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="bg-gray-50 text-gray-400 text-[10px] uppercase tracking-widest font-black border-b border-gray-100">
-                  <th className="p-5">Kode Voucher</th><th className="p-5 text-center">Besar Diskon</th><th className="p-5">Maks. Potongan</th><th className="p-5 text-center">Status</th><th className="p-5 text-right">Aksi</th>
+                  <th className="p-5">Kode Voucher</th>
+                  <th className="p-5 text-center">Besar Diskon</th>
+                  <th className="p-5">Maks. Potongan</th>
+                  <th className="p-5 text-center">Terpakai</th>
+                  <th className="p-5 text-center">Status</th>
+                  <th className="p-5 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {filteredPromos.length === 0 ? (
-                  <tr><td colSpan="5" className="text-center p-10 text-gray-400 font-bold">Tidak ada kode promo ditemukan.</td></tr>
+                  <tr><td colSpan="6" className="text-center p-10 text-gray-400 font-bold">Tidak ada kode promo ditemukan.</td></tr>
                 ) : (
                   filteredPromos.map((promo) => (
                     <tr key={promo.id} className="border-b border-gray-50 hover:bg-emerald-50/30">
                       <td className="p-5"><span className="font-mono font-black text-brand-dark bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">{promo.code}</span></td>
                       <td className="p-5 text-center"><span className="font-black text-emerald-600 flex items-center justify-center gap-1">{promo.discount_percent}<Percent size={14}/></span></td>
                       <td className="p-5 font-bold text-brand-dark">Rp {promo.max_discount ? promo.max_discount.toLocaleString('id-ID') : 'Tanpa Batas'}</td>
+                      
+                      {/* TAMPILAN LIMIT PENGGUNAAN */}
+                      <td className="p-5 text-center font-bold text-slate-600">
+                        {promo.current_usage} / {promo.usage_limit === 0 ? '∞' : promo.usage_limit}
+                      </td>
+
                       <td className="p-5 text-center">
                         <span className={`px-3 py-1 font-black text-[10px] uppercase tracking-widest rounded-lg ${promo.is_active === 1 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {promo.is_active === 1 ? 'Aktif' : 'Nonaktif'}
@@ -83,17 +94,23 @@ const PromoTab = () => {
               <h3 className="font-black text-xl flex items-center gap-2"><Ticket /> Buat Kode Promo</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-emerald-100 hover:text-white"><X size={24} /></button>
             </div>
-            <form onSubmit={handleAdd} className="p-6 space-y-5">
+            <form onSubmit={handleAdd} className="p-6 space-y-4">
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Kode Voucher</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Kode Voucher</label>
                 <input type="text" required value={newPromo.code} onChange={(e) => setNewPromo({...newPromo, code: e.target.value.toUpperCase()})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-black tracking-widest uppercase focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Persentase Diskon (%)</label>
-                <input type="number" required min="1" max="100" value={newPromo.discount_percent} onChange={(e) => setNewPromo({...newPromo, discount_percent: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-emerald-500 outline-none" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Diskon (%)</label>
+                  <input type="number" required min="1" max="100" value={newPromo.discount_percent} onChange={(e) => setNewPromo({...newPromo, discount_percent: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Batas Kuota Penggunaan</label>
+                  <input type="number" required min="0" placeholder="0 = Unlimited" value={newPromo.usage_limit} onChange={(e) => setNewPromo({...newPromo, usage_limit: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-emerald-500 outline-none" />
+                </div>
               </div>
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Maksimal Potongan (Rp)</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Maksimal Potongan (Rp)</label>
                 <input type="number" required min="5000" value={newPromo.max_discount} onChange={(e) => setNewPromo({...newPromo, max_discount: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
               <button type="submit" disabled={isSubmitting} className="w-full pt-4 mt-2 bg-emerald-500 text-white font-black py-4 rounded-xl hover:bg-emerald-600 transition-colors flex justify-center gap-2">

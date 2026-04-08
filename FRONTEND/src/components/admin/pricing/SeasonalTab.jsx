@@ -6,12 +6,21 @@ const SeasonalTab = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-  const token = localStorage.getItem('token');
+  
+  // PERBAIKAN 1: Buat fungsi untuk menarik token secara dinamis
+  const getAuthToken = () => {
+    return localStorage.getItem('token') || localStorage.getItem('admin_token');
+  };
 
   // 1. Ambil data dari backend saat tab kalender dibuka
   useEffect(() => {
+    const token = getAuthToken(); // PERBAIKAN 2: Tarik token segar di dalam useEffect
+
     fetch(`${API_URL}/api/admin/pricing/seasonal`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` 
+      }
     })
     .then(res => res.json())
     .then(data => {
@@ -28,7 +37,7 @@ const SeasonalTab = () => {
       }
     })
     .catch(err => console.error("Gagal load data seasonal:", err));
-  }, [API_URL, token]);
+  }, [API_URL]); // Hilangkan token dari array dependency
 
   const handleAddEvent = () => {
     setSeasonalRules([...seasonalRules, { id: Date.now(), name: '', startDate: '', endDate: '', markup: 0 }]);
@@ -49,11 +58,13 @@ const SeasonalTab = () => {
   const handleSave = async () => {
     setIsLoading(true);
     try {
+      const token = getAuthToken(); // PERBAIKAN 3: Tarik token segar sesaat sebelum menyimpan
+
       const res = await fetch(`${API_URL}/api/admin/pricing/seasonal`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify({ rules: seasonalRules })
       });
@@ -61,7 +72,7 @@ const SeasonalTab = () => {
       if (result.success) {
         alert('✅ Kalender Event BAR berhasil disimpan ke Database!');
       } else {
-        alert('❌ Gagal menyimpan: ' + result.error);
+        alert('❌ Gagal menyimpan: ' + (result.error || result.message));
       }
     } catch (error) {
       console.error(error);

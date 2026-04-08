@@ -4,8 +4,16 @@ export const useUsers = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const authToken = localStorage.getItem('admin_token') || localStorage.getItem('token');
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+  // 1. Fungsi penarik token yang selalu fresh (segar)
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -13,7 +21,7 @@ export const useUsers = () => {
       const timestamp = new Date().getTime(); 
       const res = await fetch(`${API_URL}/api/admin/kyc?_t=${timestamp}`, {
         headers: { 
-          'Authorization': `Bearer ${authToken}`, 
+          ...getAuthHeaders(), // Gunakan spread operator untuk menggabungkan header
           'Cache-Control': 'no-cache, no-store' 
         }
       });
@@ -29,7 +37,7 @@ export const useUsers = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [authToken, API_URL]);
+  }, [API_URL]); // authToken dihapus dari dependency
 
   const updateKyc = async (id, name, newStatus) => {
     const actionText = newStatus === 'verified' ? 'ACC MANUAL' : 
@@ -41,7 +49,7 @@ export const useUsers = () => {
     try {
       const res = await fetch(`${API_URL}/api/admin/kyc/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        headers: getAuthHeaders(), // Gunakan header dinamis
         body: JSON.stringify({ status: newStatus })
       });
       const data = await res.json();
@@ -60,7 +68,7 @@ export const useUsers = () => {
     try {
       const res = await fetch(`${API_URL}/api/admin/kyc/${id}/code`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${authToken}` }
+        headers: getAuthHeaders() // Gunakan header dinamis
       });
       const data = await res.json();
       if (data.success) {
@@ -76,8 +84,8 @@ export const useUsers = () => {
   };
 
   useEffect(() => {
-    if (authToken) fetchUsers();
-  }, [fetchUsers, authToken]);
+    fetchUsers();
+  }, [fetchUsers]); // Hanya bergantung pada fetchUsers
 
   return { users, isLoading, updateKyc, generateCode };
 };

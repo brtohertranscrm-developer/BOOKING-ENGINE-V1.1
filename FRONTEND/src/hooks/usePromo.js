@@ -3,13 +3,31 @@ import { useState, useEffect, useCallback } from 'react';
 export const usePromo = () => {
   const [promos, setPromos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const token = localStorage.getItem('token');
+  
+  // 1. Gunakan Environment Variable agar aman saat di-hosting
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+  // 2. Buat fungsi pembantu agar token selalu fresh setiap kali ditarik
+  const getAuthHeaders = () => {
+    // Cari token dengan nama 'token' atau 'admin_token'
+    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    
+    // Jika tidak ada token sama sekali, lempar peringatan (bukan error API)
+    if (!token) {
+      console.warn("Peringatan: Token Admin tidak ditemukan. Anda mungkin perlu login ulang.");
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    };
+  };
 
   const fetchPromos = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/admin/promos', {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch(`${API_URL}/api/admin/promos`, {
+        headers: getAuthHeaders() // Gunakan fungsi pembantu di sini
       });
       const data = await res.json();
       if (data.success) setPromos(data.data);
@@ -18,25 +36,22 @@ export const usePromo = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [API_URL]);
 
   const addPromo = async (newPromo) => {
     try {
-      const res = await fetch('http://localhost:5001/api/admin/promos', {
+      const res = await fetch(`${API_URL}/api/admin/promos`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
-        },
+        headers: getAuthHeaders(), // Gunakan fungsi pembantu di sini
         body: JSON.stringify(newPromo)
       });
       const data = await res.json();
       if (data.success) {
         alert('Promo berhasil ditambahkan!');
         fetchPromos();
-        return true; // Beri tahu komponen kalau sukses
+        return true; 
       } else {
-        alert('Gagal menambah promo: ' + data.error);
+        alert('Gagal menambah promo: ' + (data.error || data.message));
         return false;
       }
     } catch (error) {
@@ -49,16 +64,17 @@ export const usePromo = () => {
     const newStatus = currentStatus === 1 ? 0 : 1;
     if (!window.confirm(`Yakin ingin ${newStatus === 1 ? 'mengaktifkan' : 'mematikan'} promo ini?`)) return;
     try {
-      const res = await fetch(`http://localhost:5001/api/admin/promos/${id}/toggle`, {
+      const res = await fetch(`${API_URL}/api/admin/promos/${id}/toggle`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
-        },
+        headers: getAuthHeaders(), // Gunakan fungsi pembantu di sini
         body: JSON.stringify({ is_active: newStatus })
       });
       const data = await res.json();
-      if (data.success) fetchPromos(); 
+      if (data.success) {
+        fetchPromos(); 
+      } else {
+        alert('Gagal mengubah status promo: ' + (data.error || data.message));
+      }
     } catch (error) {
       alert('Gagal mengubah status promo.');
     }

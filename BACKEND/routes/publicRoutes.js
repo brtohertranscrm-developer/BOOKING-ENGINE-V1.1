@@ -70,7 +70,11 @@ router.get('/articles/:id', (req, res) => {
   });
 });
 
-// Endpoint untuk cek validasi kode promo
+// ==========================================
+// PROMO VALIDATION & TRACKING
+// ==========================================
+
+// 1. Endpoint untuk cek validasi kode promo
 router.post('/promotions/validate', (req, res) => {
   const { code } = req.body;
   
@@ -78,7 +82,7 @@ router.post('/promotions/validate', (req, res) => {
     if (err) return res.status(500).json({ success: false, error: err.message });
     if (!promo) return res.status(404).json({ success: false, message: "Kode promo tidak ditemukan atau sudah tidak aktif." });
 
-    // Cek limit penggunaan
+    // Cek limit penggunaan (Jika limit 0, berarti unlimited)
     if (promo.usage_limit > 0 && promo.current_usage >= promo.usage_limit) {
       return res.status(400).json({ success: false, message: "Kuota kode promo ini sudah habis." });
     }
@@ -91,6 +95,17 @@ router.post('/promotions/validate', (req, res) => {
         max_discount: promo.max_discount
       } 
     });
+  });
+});
+
+// 2. Endpoint untuk menambah tracking penggunaan (Ditembak saat checkout berhasil)
+router.post('/promotions/increment', (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ success: false, message: "Kode promo dibutuhkan" });
+
+  db.run(`UPDATE promotions SET current_usage = current_usage + 1 WHERE code = ?`, [code], function(err) {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    res.json({ success: true, message: "Penggunaan promo berhasil dicatat" });
   });
 });
 

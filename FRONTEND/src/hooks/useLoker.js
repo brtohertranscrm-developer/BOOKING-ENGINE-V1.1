@@ -3,13 +3,24 @@ import { useState, useEffect, useCallback } from 'react';
 export const useLoker = () => {
   const [lockers, setLockers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const authToken = localStorage.getItem('admin_token') || localStorage.getItem('token');
+
+  // 1. Gunakan URL dinamis agar aman saat web di-hosting
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+  // 2. Fungsi penarik token yang selalu fresh (segar) saat fungsi dipanggil
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
 
   const fetchLockers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/admin/lockers', {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+      const res = await fetch(`${API_URL}/api/admin/lockers`, {
+        headers: getAuthHeaders() // Gunakan header dinamis
       });
       const data = await res.json();
       if (data.success) setLockers(data.data);
@@ -18,16 +29,13 @@ export const useLoker = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [authToken]);
+  }, [API_URL]); // authToken tidak lagi jadi dependency
 
   const addLocker = async (newLocker) => {
     try {
-      const res = await fetch('http://localhost:5001/api/admin/lockers', {
+      const res = await fetch(`${API_URL}/api/admin/lockers`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}` 
-        },
+        headers: getAuthHeaders(), // Gunakan header dinamis
         body: JSON.stringify({
           ...newLocker,
           price_per_hour: Number(newLocker.price_per_hour)
@@ -55,12 +63,9 @@ export const useLoker = () => {
     if (!window.confirm(`Ubah status ke ${newStatus}?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:5001/api/admin/lockers/${id}/status`, {
+      const res = await fetch(`${API_URL}/api/admin/lockers/${id}/status`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
+        headers: getAuthHeaders(), // Gunakan header dinamis
         body: JSON.stringify({ status: newStatus })
       });
       const data = await res.json();

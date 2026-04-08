@@ -10,20 +10,30 @@ export const useDashboard = () => {
   });
   const [recentBookings, setRecentBookings] = useState([]);
 
-  const authToken = localStorage.getItem('admin_token') || localStorage.getItem('token');
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+  // 1. Fungsi penarik token yang selalu fresh (segar)
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
 
   const fetchDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // 2. Tembak API Stats dengan header dinamis
       const resStats = await fetch(`${API_URL}/api/admin/stats`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+        headers: getAuthHeaders() 
       });
       const dataStats = await resStats.json();
       if (dataStats.success) setStats(dataStats.data);
 
+      // 3. Tembak API Bookings dengan header dinamis
       const resBookings = await fetch(`${API_URL}/api/admin/bookings`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+        headers: getAuthHeaders() 
       });
       const dataBookings = await resBookings.json();
       if (dataBookings.success) setRecentBookings(dataBookings.data.slice(0, 4));
@@ -32,11 +42,11 @@ export const useDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [authToken, API_URL]);
+  }, [API_URL]); // Hapus authToken dari dependency karena sudah ditarik otomatis di dalam
 
   useEffect(() => {
-    if (authToken) fetchDashboardData();
-  }, [fetchDashboardData, authToken]);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const formatRupiah = (angka) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka || 0);
