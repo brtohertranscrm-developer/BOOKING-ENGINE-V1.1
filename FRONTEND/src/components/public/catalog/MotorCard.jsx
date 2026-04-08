@@ -2,8 +2,13 @@ import React from 'react';
 import { Calendar, Users, CloudRain, Settings2, Clock, Flame } from 'lucide-react';
 
 const MotorCard = ({ motor, onClick }) => {
+  // Ambil harga 24 jam final (dari current_price hasil backend)
   const price24h = motor.current_price || motor.base_price;
-  const price12h = Math.round(price24h * 0.7);
+  
+  // PERBAIKAN: Baca harga 12 jam dari perhitungan backend (current_price_12h) 
+  // Jika tidak ada, gunakan price_12h asli, lalu fallback terakhir dengan rumus 0.7
+  const price12h = motor.current_price_12h || motor.price_12h || Math.round(price24h * 0.7);
+  
   const isMatic = motor.category.toLowerCase().includes('matic');
 
   return (
@@ -22,7 +27,6 @@ const MotorCard = ({ motor, onClick }) => {
             <Flame size={10} /> Hot
           </div>
         )}
-        {/* Hover Overlay Icon */}
         <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <div className="bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
             Pilih Tanggal <Calendar size={14} />
@@ -51,6 +55,8 @@ const MotorCard = ({ motor, onClick }) => {
             <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 text-center relative">
               <div className="text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-1 flex justify-center items-center gap-1"><Clock size={10}/> 24 Jam</div>
               <div className="font-black text-rose-500 text-sm">Rp {price24h.toLocaleString('id-ID')}</div>
+              
+              {/* PERBAIKAN: Gunakan motor.base_price asli untuk memunculkan harga lama (yang dicoret) */}
               {motor.is_surge && (
                 <div className="absolute -top-2 -right-1 bg-rose-500 text-white text-[8px] px-2 py-0.5 rounded-full line-through opacity-90 shadow-sm">
                   {motor.base_price.toLocaleString('id-ID')}

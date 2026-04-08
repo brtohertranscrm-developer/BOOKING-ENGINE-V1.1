@@ -24,29 +24,24 @@ router.get('/motors', (req, res) => {
         let currentPrice12h = motor.price_12h || 0;
         let isSurge = false;
 
-        // BACA SAKELAR DENGAN AMAN:
-        // Jika data undefined/null (karena motor lama belum diupdate), anggap Aktif (1)
-        // Jika ada datanya, pastikan dibaca sebagai Angka (parseInt)
         const isDynamicAllowed = (motor.allow_dynamic_pricing === undefined || motor.allow_dynamic_pricing === null) 
           ? true 
           : parseInt(motor.allow_dynamic_pricing) === 1;
 
-        // Jika Sakelar ON (1) dan ada Markup
         if (isDynamicAllowed && markup > 0) {
           currentPrice = motor.base_price + (motor.base_price * (markup / 100));
           currentPrice12h = currentPrice12h + (currentPrice12h * (markup / 100));
-          isSurge = true; // Munculkan Badge "HOT" di Frontend
+          isSurge = true;
         }
 
         return {
           ...motor,
-          base_price: currentPrice,       // TIMPA base_price dengan harga final
-          price_12h: currentPrice12h,     // TIMPA price_12h dengan harga final
-          current_price: currentPrice,    // Dipakai MotorCard untuk UI Hot
-          is_surge: isSurge               // Memberitahu MotorCard untuk memunculkan efek visual
+          // PERBAIKAN: Jangan timpa base_price dan price_12h agar frontend tahu harga aslinya
+          current_price: currentPrice,         // Harga 24 jam final (termasuk surge jika aktif)
+          current_price_12h: currentPrice12h,  // Harga 12 jam final (termasuk surge jika aktif)
+          is_surge: isSurge
         };
       });
-
       res.json({ success: true, data: formattedMotors || [] });
     });
   });
