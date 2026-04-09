@@ -25,6 +25,44 @@ export default function Navbar() {
     }
   }, [isMobileMenuOpen]);
 
+  // ========================================================
+  // FUNGSI PINTAR PENENTU ARAH DASHBOARD BERDASARKAN ROLE
+  // ========================================================
+  const getDashboardUrl = (userData) => {
+    if (!userData) return '/login';
+    // Admin utama dan superadmin langsung ke halaman utama admin
+    if (userData.role === 'admin' || userData.role === 'superadmin') return '/admin';
+    
+    // Khusus Subadmin, arahkan sesuai izin pertama yang dia miliki
+    if (userData.role === 'subadmin') {
+       let perms = [];
+       try {
+         perms = typeof userData.permissions === 'string' 
+           ? JSON.parse(userData.permissions) 
+           : (userData.permissions || []);
+       } catch(e) {}
+       
+       if (perms.includes('dashboard')) return '/admin';
+       if (perms.includes('artikel')) return '/admin/artikel';
+       if (perms.includes('armada')) return '/admin/armada';
+       if (perms.includes('booking')) return '/admin/booking';
+       if (perms.includes('pricing')) return '/admin/pricing';
+       if (perms.includes('users')) return '/admin/users';
+       return '/admin'; // Fallback
+    }
+    
+    // User / Pelanggan biasa
+    return '/dashboard'; 
+  };
+
+  // Fungsi untuk menampilkan label Role yang lebih rapi
+  const getRoleLabel = (role) => {
+    if (role === 'superadmin') return 'Super Administrator';
+    if (role === 'admin') return 'Administrator';
+    if (role === 'subadmin') return 'Sub-Admin / Vendor';
+    return 'Pengguna Terverifikasi';
+  };
+
   return (
     <>
       <nav className="bg-white shadow-sm sticky top-0 z-40 border-b border-gray-100">
@@ -58,8 +96,8 @@ export default function Navbar() {
                 {user ? (
                   <>
                     <button 
-                      // PERBAIKAN: Cek role user untuk navigasi Desktop
-                      onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')} 
+                      // PERBAIKAN: Gunakan fungsi getDashboardUrl
+                      onClick={() => navigate(getDashboardUrl(user))} 
                       className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 text-brand-primary font-bold hover:bg-rose-100 transition-colors"
                     >
                       <UserCircle size={20} />
@@ -167,15 +205,15 @@ export default function Navbar() {
                   </div>
                   <div>
                     <p className="font-bold text-slate-900 capitalize">{user.name}</p>
-                    {/* Opsional: Ubah label Pengguna Terverifikasi jadi Admin jika role nya admin */}
+                    {/* PERBAIKAN: Gunakan fungsi getRoleLabel */}
                     <p className="text-xs text-gray-500 font-medium">
-                      {user?.role === 'admin' ? 'Administrator' : 'Pengguna Terverifikasi'}
+                      {getRoleLabel(user.role)}
                     </p>
                   </div>
                 </div>
                 <button 
-                  // PERBAIKAN: Cek role user untuk navigasi Mobile
-                  onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
+                  // PERBAIKAN: Gunakan fungsi getDashboardUrl
+                  onClick={() => navigate(getDashboardUrl(user))}
                   className="w-full py-4 rounded-2xl bg-brand-primary text-white font-black hover:bg-brand-secondary transition-colors"
                 >
                   Masuk ke Dashboard

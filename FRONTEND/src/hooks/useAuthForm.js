@@ -29,9 +29,27 @@ export const useAuthForm = () => {
         if (login) login(result.user, result.token); 
         
         // 🔥 PERBAIKAN: Cek semua tipe admin agar masuk ke halaman /admin
-        if (result.user.role === 'admin' || result.user.role === 'superadmin' || result.user.role === 'subadmin') {
-          navigate('/admin'); 
-        } else {
+        if (result.user.role === 'superadmin' || result.user.role === 'admin') {
+          navigate('/admin'); // Superadmin bebas masuk dashboard utama
+        } 
+        else if (result.user.role === 'subadmin') {
+          // Parse permissions milik subadmin
+          let perms = [];
+          try {
+             perms = typeof result.user.permissions === 'string' 
+               ? JSON.parse(result.user.permissions) 
+               : (result.user.permissions || []);
+          } catch(e) {}
+
+          // Cari rute mana yang dia punya akses
+          if (perms.includes('dashboard')) navigate('/admin');
+          else if (perms.includes('artikel')) navigate('/admin/artikel');
+          else if (perms.includes('armada')) navigate('/admin/armada');
+          else if (perms.includes('booking')) navigate('/admin/booking');
+          else if (perms.includes('pricing')) navigate('/admin/pricing');
+          else navigate('/admin'); // Fallback
+        } 
+        else {
           navigate('/dashboard'); 
         }
 
