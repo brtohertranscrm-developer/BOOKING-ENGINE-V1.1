@@ -50,7 +50,7 @@ export default function ArticleDetail() {
       <ArticleHeader article={article} />
 
       {/* 2. Content Container */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-8 -mt-32 relative z-20">
+      <div className="max-w-4xl mx-auto px-8 sm:px-8 -mt-28 relative z-20">
         
       {/* Konten Artikel (Render HTML dari Quill) */}
         <div 
