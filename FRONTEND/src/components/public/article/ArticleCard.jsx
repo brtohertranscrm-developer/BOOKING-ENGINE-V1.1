@@ -5,13 +5,21 @@ import { Calendar, ChevronRight } from 'lucide-react';
 const ArticleCard = ({ article }) => {
   const navigate = useNavigate();
 
-  // Fungsi pintar untuk mengambil "AI & SEO Summary" atau memotong teks
+  // Fungsi pintar & BUG-FREE untuk mengambil Summary
   const getSummary = (content) => {
     if (!content) return '';
     const metaMatch = content.match(/data-summary="([^"]*)"/);
     if (metaMatch && metaMatch[1]) return metaMatch[1];
     
-    return content.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...';
+    // PERBAIKAN: Ganti tag HTML dengan SPASI (agar paragraf tidak menempel jadi satu kata panjang)
+    // dan bersihkan kode &nbsp; bawaan text editor.
+    let cleanText = content
+      .replace(/<[^>]+>/g, ' ') 
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ') // Rapikan spasi ganda
+      .trim();
+
+    return cleanText.length > 150 ? cleanText.substring(0, 150) + '...' : cleanText;
   };
 
   return (
@@ -39,7 +47,8 @@ const ArticleCard = ({ article }) => {
         <h3 className="text-xl font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
           {article.title}
         </h3>
-        <p className="text-slate-500 text-sm line-clamp-3 mb-6 leading-relaxed flex-grow">
+        {/* PERBAIKAN: Tambahkan break-words dan whitespace-normal */}
+        <p className="text-slate-500 text-sm line-clamp-3 mb-6 leading-relaxed flex-grow break-words whitespace-normal">
           {getSummary(article.content)}
         </p>
         <div className="flex items-center text-blue-600 font-black text-xs uppercase tracking-widest mt-auto">
