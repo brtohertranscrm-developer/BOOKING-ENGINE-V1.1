@@ -27,8 +27,14 @@ export const useAuthForm = () => {
 
       if (result.success) {
         if (login) login(result.user, result.token); 
-        if (result.user.role === 'admin') navigate('/admin'); 
-        else navigate('/dashboard'); 
+        
+        // 🔥 PERBAIKAN: Cek semua tipe admin agar masuk ke halaman /admin
+        if (result.user.role === 'admin' || result.user.role === 'superadmin' || result.user.role === 'subadmin') {
+          navigate('/admin'); 
+        } else {
+          navigate('/dashboard'); 
+        }
+
       } else {
         setError(result.error || 'Email atau password salah.');
       }

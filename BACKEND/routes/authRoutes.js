@@ -82,8 +82,13 @@ router.post('/login', (req, res) => {
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) return res.status(400).json({ success: false, error: 'Password salah.' });
 
-      // Buat token
-      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+      // Buat token (PERBAIKAN: Masukkan permissions ke dalam JWT)
+      const token = jwt.sign({ 
+        id: user.id, 
+        role: user.role,
+        permissions: user.permissions // <-- Membawa hak akses
+      }, JWT_SECRET, { expiresIn: '24h' });
+      
       delete user.password; // Keamanan: jangan kirim password ke frontend
       
       res.json({ success: true, user, token });

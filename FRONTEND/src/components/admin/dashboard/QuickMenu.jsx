@@ -1,29 +1,55 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Bike, Package, ClipboardList, Ticket, LifeBuoy, FileText, TrendingUp } from 'lucide-react';
+// 1. Import AuthContext
+import { AuthContext } from '../../../context/AuthContext';
 
 const QuickMenu = () => {
   const navigate = useNavigate();
+  // 2. Ambil data user yang sedang login
+  const { user } = useContext(AuthContext) || {};
 
-  // ==========================================
-  // DAFTAR MENU CEPAT ADMIN
-  // ==========================================
+  // 3. DAFTAR MENU CEPAT ADMIN (Tambahkan 'key' yang sesuai dengan database permissions)
+  // Catatan: Menu Promo saya gabung ke akses 'pricing', dan Tiket Bantuan ke akses 'users'
   const adminMenus = [
-    { name: 'Data Pesanan', path: '/admin/booking', icon: ClipboardList, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-    { name: 'Armada Motor', path: '/admin/armada', icon: Bike, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { name: 'Smart Loker', path: '/admin/loker', icon: Package, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { name: 'Harga Dinamis', path: '/admin/pricing', icon: TrendingUp, color: 'text-orange-500', bg: 'bg-orange-50' }, // <-- Menu Baru Ditambahkan
-    { name: 'Banner Promo', path: '/admin/promotions', icon: Ticket, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { name: 'Konten Artikel', path: '/admin/artikel', icon: FileText, color: 'text-cyan-500', bg: 'bg-cyan-50' }, 
-    { name: 'Data Pelanggan', path: '/admin/users', icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { name: 'Tiket Bantuan', path: '/admin/support', icon: LifeBuoy, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { name: 'Data Pesanan', path: '/admin/booking', key: 'booking', icon: ClipboardList, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { name: 'Armada Motor', path: '/admin/armada', key: 'armada', icon: Bike, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { name: 'Smart Loker', path: '/admin/loker', key: 'loker', icon: Package, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { name: 'Harga Dinamis', path: '/admin/pricing', key: 'pricing', icon: TrendingUp, color: 'text-orange-500', bg: 'bg-orange-50' }, 
+    { name: 'Banner Promo', path: '/admin/promotions', key: 'pricing', icon: Ticket, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { name: 'Konten Artikel', path: '/admin/artikel', key: 'artikel', icon: FileText, color: 'text-cyan-500', bg: 'bg-cyan-50' }, 
+    { name: 'Data Pelanggan', path: '/admin/users', key: 'users', icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { name: 'Tiket Bantuan', path: '/admin/support', key: 'users', icon: LifeBuoy, color: 'text-amber-500', bg: 'bg-amber-50' },
   ];
+
+  // 4. Logic parsing permissions yang aman
+  let userPermissions = [];
+  try {
+    if (typeof user?.permissions === 'string') {
+      const parsed = JSON.parse(user.permissions);
+      userPermissions = Array.isArray(parsed) ? parsed : [];
+    } else if (Array.isArray(user?.permissions)) {
+      userPermissions = user.permissions;
+    }
+  } catch (e) {
+    userPermissions = [];
+  }
+
+  // 5. Izinkan semua jika dia superadmin ATAU admin lama
+  const isSuperAdmin = user?.role === 'superadmin' || user?.role === 'admin';
+
+  // 6. Filter Menu: Hanya sisakan yang key-nya ada di dalam permissions
+  const allowedMenus = adminMenus.filter(menu => isSuperAdmin || userPermissions.includes(menu.key));
+
+  // Jika subadmin sama sekali tidak diizinkan mengakses menu apapun di QuickMenu, sembunyikan section ini
+  if (allowedMenus.length === 0) return null;
 
   return (
     <div className="mb-12">
       <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 px-1">Manajemen Cepat</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        {adminMenus.map((menu, index) => {
+        {/* Lakukan mapping pada allowedMenus, BUKAN adminMenus */}
+        {allowedMenus.map((menu, index) => {
           const Icon = menu.icon;
           return (
             <button 

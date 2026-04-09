@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt'); // <-- Tambahkan baris ini di atas
 const express = require('express');
 const db = require('../db');
 // 1. UPDATE: Import requirePermission dari middleware
@@ -384,6 +385,46 @@ router.post('/upload', requirePermission('artikel'), upload.single('image'), (re
   if (!req.file) return res.status(400).json({ success: false, message: 'Tidak ada file yang diunggah' });
   const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
   res.json({ success: true, url: fileUrl });
+});
+
+// ==========================================
+// ADMIN & ROLE MANAGEMENT (Akses: settings)
+// ==========================================
+
+// GET: Ambil daftar semua admin (kecuali superadmin utama jika tidak ingin diedit, tapi kita tampilkan semua saja)
+router.get('/admins', requirePermission('settings'), (req, res) => {
+  db.all(`SELECT id, name, email, phone, role, permissions, join_date FROM users WHERE role IN ('admin', 'superadmin', 'subadmin') ORDER BY join_date DESC`, (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    res.json({ success: true, data: rows });
+  });
+});
+
+// POST: Buat admin/subadmin baru
+router.post('/admins', requirePermission('settings'), (req, res) => {
+  const { name, email, password, phone, role, permissions } = req.body;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  const id = 'A-' + Date.now(); // Generate ID unik simpel
+  const permsString = JSON.stringify(permissions || []);
+
+  const query = `INSERT INTO users (id, name, email, password, phone, role, permissions, join_date, kyc_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved')`;
+  db.run(query, [id, name, email, hashedPassword, phone || '-', role, permsString, new Date().toISOString()], function(err) {
+    if (err) {
+      if (err.message.includes("UNIQUE constraint failed")) return res.status(400).json({ success: false, error: "Email sudah digunakan." });
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.json({ success: true, message: 'Akun Admin berhasil ditambahkan' });
+  });
+});
+
+// DELETE: Hapus admin
+router.delete('/admins/:id', requirePermission('settings'), (req, res) => {
+  // Proteksi: Jangan sampai menghapus dirinya sendiri atau superadmin
+  if (req.user.id === req.params.id) return res.status(400).json({ success: false, error: "Tidak bisa menghapus akun Anda sendiri." });
+  
+  db.run(`DELETE FROM users WHERE id=? AND role != 'superadmin'`, [req.params.id], function(err) {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    res.json({ success: true, message: 'Akun Admin berhasil dihapus' });
+  });
 });
 
 module.exports = router;
