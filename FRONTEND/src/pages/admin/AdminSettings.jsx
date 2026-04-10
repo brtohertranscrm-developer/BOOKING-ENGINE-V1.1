@@ -17,6 +17,7 @@ const AdminSettings = () => {
   const { token, user } = useContext(AuthContext);
   const [admins, setAdmins] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL; // Tambahan variabel env
   
   // Form State
   const [formData, setFormData] = useState({
@@ -25,7 +26,7 @@ const AdminSettings = () => {
 
   const fetchAdmins = async () => {
     try {
-      const res = await fetch('http://localhost:5001/api/admin/admins', {
+      const res = await fetch(`${API_URL}/api/admin/admins`, { // URL Dinamis
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -51,7 +52,7 @@ const AdminSettings = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:5001/api/admin/admins', {
+      const res = await fetch(`${API_URL}/api/admin/admins`, { // URL Dinamis
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ const AdminSettings = () => {
   const handleDelete = async (id) => {
     if(!window.confirm('Yakin ingin menghapus akun ini?')) return;
     try {
-      const res = await fetch(`http://localhost:5001/api/admin/admins/${id}`, {
+      const res = await fetch(`${API_URL}/api/admin/admins/${id}`, { // URL Dinamis
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
