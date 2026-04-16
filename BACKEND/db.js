@@ -8,12 +8,11 @@ const dbPath = path.resolve(__dirname, 'brother_trans.db');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('❌ Gagal terhubung ke database:', err.message);
-    process.exit(1); // Gagal koneksi DB = server tidak boleh jalan
+    process.exit(1);
   }
   console.log('✅ Berhasil terhubung ke database SQLite.');
 });
 
-// Aktifkan Foreign Key & WAL mode untuk performa lebih baik
 db.run("PRAGMA foreign_keys = ON");
 db.run("PRAGMA journal_mode = WAL");
 
@@ -182,9 +181,75 @@ db.serialize(() => {
   `);
 
   // ==========================================
+  // [FINANCE] TABEL BARU — Fase 1
+  // ==========================================
+
+  // --- EXPENSES (Pencatatan Biaya Operasional) ---
+  // Kategori: servis | bbm | sewa | gaji | marketing | lainnya
+  db.run(`
+    CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      motor_unit_id INTEGER,
+      amount INTEGER NOT NULL,
+      description TEXT,
+      receipt_url TEXT,
+      expense_date TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (motor_unit_id) REFERENCES motor_units(id) ON DELETE SET NULL,
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    )
+  `);
+
+  // --- PAYMENT RECONCILIATIONS (Cocokkan Bukti Transfer dengan Booking) ---
+  // status: pending | matched | rejected
+  db.run(`
+    CREATE TABLE IF NOT EXISTS payment_reconciliations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id TEXT NOT NULL,
+      bank_name TEXT NOT NULL,
+      transfer_amount INTEGER NOT NULL,
+      transfer_date TEXT NOT NULL,
+      proof_url TEXT,
+      status TEXT DEFAULT 'pending',
+      notes TEXT,
+      reconciled_by TEXT,
+      reconciled_at TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (order_id) REFERENCES bookings(order_id),
+      FOREIGN KEY (reconciled_by) REFERENCES users(id)
+    )
+  `);
+
+  // --- VENDOR PAYOUTS (Komisi Mitra / Pemilik Armada) ---
+  // status: pending | approved | paid
+  db.run(`
+    CREATE TABLE IF NOT EXISTS vendor_payouts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      vendor_user_id TEXT NOT NULL,
+      period_start TEXT NOT NULL,
+      period_end TEXT NOT NULL,
+      gross_revenue INTEGER NOT NULL DEFAULT 0,
+      commission_rate REAL NOT NULL DEFAULT 0,
+      commission_amount INTEGER NOT NULL DEFAULT 0,
+      status TEXT DEFAULT 'pending',
+      transfer_proof TEXT,
+      notes TEXT,
+      approved_by TEXT,
+      approved_at TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (vendor_user_id) REFERENCES users(id),
+      FOREIGN KEY (approved_by) REFERENCES users(id)
+    )
+  `);
+
+  // ==========================================
   // 4. MIGRASI — Tambah kolom baru untuk database lama
   //    (Aman dijalankan berulang kali, diabaikan jika sudah ada)
   // ==========================================
+
+  // Migrasi lama (tetap dipertahankan)
   addColumnIfNotExists('users', 'kyc_code', 'TEXT');
   addColumnIfNotExists('users', 'permissions', "TEXT DEFAULT '[]'");
   addColumnIfNotExists('users', 'location', 'TEXT DEFAULT "Lainnya"');
@@ -210,9 +275,23 @@ db.serialize(() => {
   addColumnIfNotExists('articles', 'geo_location', 'TEXT');
   addColumnIfNotExists('articles', 'views', 'INTEGER DEFAULT 0');
 
+  // [FINANCE] Migrasi tabel yang sudah ada — Fase 1
+  // bookings: metode pembayaran (transfer manual / cash / qris)
+  addColumnIfNotExists('bookings', 'payment_method', "TEXT DEFAULT 'transfer'");
+
+  // motors: relasi ke vendor/mitra pemilik armada dan komisi-nya
+  addColumnIfNotExists('motors', 'vendor_user_id', 'TEXT');
+  addColumnIfNotExists('motors', 'vendor_rate', 'REAL DEFAULT 0');
+
+  // users: rekening bank untuk keperluan payout vendor
+  addColumnIfNotExists('users', 'bank_account', 'TEXT');
+  addColumnIfNotExists('users', 'bank_name', 'TEXT');
+
   // ==========================================
   // 5. INDEXES — Percepat query yang sering dipakai
   // ==========================================
+
+  // Index lama (tetap dipertahankan)
   db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
@@ -229,10 +308,27 @@ db.serialize(() => {
   db.run(`CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug)`);
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_price_rules_type ON price_rules(rule_type, is_active)`);
-
   db.run(`CREATE INDEX IF NOT EXISTS idx_promotions_code ON promotions(code)`);
-
   db.run(`CREATE INDEX IF NOT EXISTS idx_support_tickets_user ON support_tickets(user_id)`);
+
+  // [FINANCE] Index baru — Fase 1
+  // Expenses: query filter by date range dan kategori adalah yang paling sering
+  db.run(`CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_expenses_created_by ON expenses(created_by)`);
+
+  // Rekonsiliasi: sering di-query per order_id dan status
+  db.run(`CREATE INDEX IF NOT EXISTS idx_reconciliations_order_id ON payment_reconciliations(order_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_reconciliations_status ON payment_reconciliations(status)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_reconciliations_created_at ON payment_reconciliations(created_at)`);
+
+  // Vendor payouts: query per vendor dan status approval
+  db.run(`CREATE INDEX IF NOT EXISTS idx_payouts_vendor_id ON vendor_payouts(vendor_user_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_payouts_status ON vendor_payouts(status)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_payouts_period ON vendor_payouts(period_start, period_end)`);
+
+  // Motors: query armada per vendor
+  db.run(`CREATE INDEX IF NOT EXISTS idx_motors_vendor ON motors(vendor_user_id)`);
 
   console.log('✅ Semua tabel, migrasi & index berhasil diverifikasi!');
 });

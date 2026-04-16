@@ -12,8 +12,6 @@ const PORT = process.env.PORT || 5001;
 // ==========================================
 // 1. MIDDLEWARE UMUM
 // ==========================================
-
-// CORS — hanya izinkan origin yang terdaftar
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:5173',
@@ -22,7 +20,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Izinkan request tanpa origin (Postman, curl, mobile app)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error(`Origin ${origin} tidak diizinkan oleh CORS.`));
@@ -30,11 +27,9 @@ app.use(cors({
   credentials: true
 }));
 
-// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static files — folder uploads
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 app.use('/uploads', express.static(uploadDir));
@@ -42,25 +37,27 @@ app.use('/uploads', express.static(uploadDir));
 // ==========================================
 // 2. ROUTES
 // ==========================================
-const authRoutes = require('./routes/authRoutes');
-const publicRoutes = require('./routes/publicRoutes');
-const userRoutes = require('./routes/userRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+const authRoutes    = require('./routes/authRoutes');
+const publicRoutes  = require('./routes/publicRoutes');
+const userRoutes    = require('./routes/userRoutes');
+const adminRoutes   = require('./routes/adminRoutes');
+const financeRoutes = require('./routes/financeRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api', publicRoutes);
 app.use('/api', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/finance', financeRoutes);
 
 // ==========================================
-// 3. HEALTH CHECK (berguna untuk monitoring)
+// 3. HEALTH CHECK
 // ==========================================
 app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // ==========================================
-// 4. 404 HANDLER — route tidak ditemukan
+// 4. 404 HANDLER
 // ==========================================
 app.use((req, res) => {
   res.status(404).json({ success: false, error: `Endpoint ${req.method} ${req.originalUrl} tidak ditemukan.` });
@@ -73,17 +70,13 @@ app.use((err, req, res, next) => {
   console.error('❌ Unhandled Error:', err.message);
   console.error(err.stack);
 
-  // CORS error
   if (err.message && err.message.includes('CORS')) {
     return res.status(403).json({ success: false, error: err.message });
   }
-
-  // Multer file size error
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ success: false, error: 'Ukuran file terlalu besar. Maksimal 5MB.' });
   }
 
-  // Default
   const statusCode = err.status || err.statusCode || 500;
   res.status(statusCode).json({
     success: false,
@@ -100,7 +93,6 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Backend API Brother Trans berjalan di: http://localhost:${PORT}`);
 });
 
-// Graceful shutdown — tutup koneksi DB dengan benar saat server mati
 const shutdown = (signal) => {
   console.log(`\n⚠️  ${signal} diterima. Menutup server...`);
   server.close(() => {
@@ -110,8 +102,6 @@ const shutdown = (signal) => {
       process.exit(0);
     });
   });
-
-  // Paksa tutup setelah 10 detik jika masih ada koneksi menggantung
   setTimeout(() => {
     console.error('⚠️  Timeout — paksa shutdown.');
     process.exit(1);
@@ -119,4 +109,4 @@ const shutdown = (signal) => {
 };
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGINT',  () => shutdown('SIGINT'));

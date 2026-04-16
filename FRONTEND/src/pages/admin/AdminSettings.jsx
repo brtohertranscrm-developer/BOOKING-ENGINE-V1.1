@@ -5,6 +5,7 @@ import { Shield, Plus, Trash2, X, Check, Save } from 'lucide-react';
 const availableMenus = [
   { key: 'dashboard', label: 'Dashboard Stats' },
   { key: 'booking', label: 'Data Pesanan (Booking)' },
+  { key: 'finance', label: 'Finance & Laporan Keuangan' },
   { key: 'armada', label: 'Manajemen Armada & Unit' },
   { key: 'loker', label: 'Manajemen Loker' },
   { key: 'pricing', label: 'Dynamic Pricing & Promo' },
